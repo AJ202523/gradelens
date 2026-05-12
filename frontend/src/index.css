@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  --color-vellum: #FAF8F5;
+  --color-fresh-paper: #FFFFFF;
+  --color-vermilion: #DA4933;
+  --color-secondary: #726861;
+  --color-tertiary: #0086AB;
+  --color-neutral: #87726F;
+  --color-warm-onyx: #1A1A1A;
+  --color-muted-taupe: #726861;
+
+  --spacing-margin-page: 40px;
+  --spacing-padding-card: 32px;
+  --spacing-stack-lg: 48px;
+  --spacing-stack-md: 24px;
+  --spacing-stack-sm: 12px;
+  --spacing-gutter: 24px;
+  --spacing-unit: 8px;
+
+  --font-headline-lg: 'Merriweather', serif;
+  --font-headline-md: 'Merriweather', serif;
+  --font-display-lg: 'Merriweather', serif;
+  --font-body-md: 'Merriweather', serif;
+  --font-label-lg: 'Inter', sans-serif;
+  --font-label-md: 'Inter', sans-serif;
+  --font-label-sm: 'Inter', sans-serif;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+  html, body { overflow-x: hidden; width: 100%; }
+  body {
+    @apply bg-vellum text-warm-onyx antialiased;
+    margin: 0;
+  }
+}

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Gradelens MVP</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Merriweather:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#eee0d7",
+                        "surface-container": "#ffe9e5",
+                        "surface-container-low": "#fff0ee",
+                        "surface-dim": "#eed4d0",
+                        "inverse-primary": "#ffb4a6",
+                        "tertiary": "#006480",
+                        "error": "#ba1a1a",
+                        "on-surface": "#261816",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#001f2a",
+                        "primary-fixed-dim": "#ffb4a6",
+                        "surface": "#fff8f6",
+                        "on-error": "#ffffff",
+                        "surface-tint": "#b12c1a",
+                        "on-tertiary-fixed-variant": "#004d64",
+                        "tertiary-fixed": "#bde9ff",
+                        "on-primary-fixed": "#400200",
+                        "tertiary-container": "#007ea1",
+                        "outline-variant": "#e2bfb8",
+                        "inverse-on-surface": "#ffedea",
+                        "primary-container": "#d0422d",
+                        "inverse-surface": "#3d2d2a",
+                        "secondary": "#665d56",
+                        "background": "#fff8f6",
+                        "on-tertiary": "#ffffff",
+                        "primary": "#ae2917",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#ffdad4",
+                        "on-secondary-container": "#6c635c",
+                        "error-container": "#ffdad6",
+                        "on-surface-variant": "#5a413c",
+                        "tertiary-fixed-dim": "#72d2fa",
+                        "surface-container-highest": "#f7ddd8",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#fbfdff",
+                        "outline": "#8e706b",
+                        "surface-container-high": "#fde2de",
+                        "surface-bright": "#fff8f6",
+                        "secondary-fixed-dim": "#d1c4bc",
+                        "secondary-container": "#eee0d7",
+                        "on-primary-fixed-variant": "#8f1103",
+                        "on-secondary-fixed": "#211a15",
+                        "on-secondary-fixed-variant": "#4e453f",
+                        "surface-variant": "#f7ddd8",
+                        "on-primary-container": "#fffbff",
+                        "on-background": "#261816",
+                        "on-error-container": "#93000a",
+                        "vellum": "#F3EFE7",
+                        "fresh-paper": "#FCFAF5",
+                        "warm-onyx": "#1A1514",
+                        "muted-taupe": "#726861",
+                        "vermilion": "#DA4933",
+                        "library-green": "#285943"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem",
+                        "sm": "0.125rem"
+                    },
+                    "spacing": {
+                        "margin-page": "48px",
+                        "stack-lg": "32px",
+                        "stack-sm": "8px",
+                        "padding-card": "24px",
+                        "unit": "4px",
+                        "gutter": "24px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Merriweather"],
+                        "body-md": ["Merriweather"],
+                        "display-lg": ["Merriweather"],
+                        "label-md": ["Inter"],
+                        "label-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Merriweather"],
+                        "body-lg": ["Merriweather"],
+                        "serif": ["Merriweather"],
+                        "sans": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["12px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "label-lg": ["14px", { "lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "1.4", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-vellum text-warm-onyx font-body-md min-h-screen flex flex-col antialiased selection:bg-vermilion selection:text-white">
+<!-- Top Navigation (Hidden on Auth, shown conceptually for structure based on JSON) -->
+<!-- The prompt implies linear flow starting at Auth, so we suppress nav initially, but I will include it hidden or simplified for the 'Dashboard' state context, but since I have to render a single page design, I'll represent the Dashboard state primarily, with Auth as a concept or separate section, but I will render the Dashboard as the main interactive view as requested by the constraints of a single static HTML output. Wait, the prompt says "Build the interactive frontend... Use React useState to simulate these state transitions." But I am strictly forbidden from adding JavaScript or React code. "DO NOT add any JavaScript or React code." Therefore, I must render a single static page that best represents the requested states, or stack them visually. I will stack them as separate sections to demonstrate the design of all 4 states within a single scrollable document, separated clearly. -->
+<main class="flex-grow w-full max-w-[1280px] mx-auto px-margin-page py-margin-page flex flex-col gap-[96px]">
+<!-- HEADER FOR DEMONSTRATION -->
+<header class="w-full flex flex-col items-center justify-center py-stack-lg border-b border-muted-taupe/20 mb-stack-lg">
+<h1 class="font-headline-lg text-headline-lg text-warm-onyx">Gradelens UI States</h1>
+<p class="font-label-md text-label-md text-muted-taupe mt-unit">Static Representation of Application States</p>
+</header>
+<!-- STATE 1: Authentication -->
+<section class="flex flex-col items-center justify-center w-full min-h-[614px]">
+<div class="bg-fresh-paper border border-muted-taupe/20 rounded-sm p-padding-card w-full max-w-md shadow-sm">
+<div class="text-center mb-stack-lg">
+<h2 class="font-headline-lg text-headline-lg text-warm-onyx">Gradelens</h2>
+</div>
+<form class="flex flex-col gap-stack-md">
+<div class="flex flex-col gap-stack-sm">
+<label class="font-label-md text-label-md text-muted-taupe uppercase" for="email">Email</label>
+<input class="bg-fresh-paper border border-muted-taupe/20 rounded-sm px-4 py-3 font-body-md text-body-md focus:border-vermilion focus:ring-0 focus:outline-none transition-colors" id="email" placeholder="scholar@university.edu" type="email"/>
+</div>
+<div class="flex flex-col gap-stack-sm">
+<label class="font-label-md text-label-md text-muted-taupe uppercase" for="password">Password</label>
+<input class="bg-fresh-paper border border-muted-taupe/20 rounded-sm px-4 py-3 font-body-md text-body-md focus:border-vermilion focus:ring-0 focus:outline-none transition-colors" id="password" placeholder="••••••••" type="password"/>
+</div>
+<button class="mt-stack-md w-full bg-vermilion text-white font-label-lg text-label-lg py-4 rounded-sm hover:bg-vermilion/90 transition-colors active:scale-[0.99]" type="button">Sign In</button>
+</form>
+</div>
+<p class="mt-stack-md font-label-md text-label-md text-muted-taupe uppercase tracking-widest text-center">State 1: Authentication</p>
+</section>
+<!-- Separator -->
+<div class="w-full h-px bg-muted-taupe/20"></div>
+<!-- STATE 2: Dashboard -->
+<section class="flex flex-col w-full">
+<!-- TopAppBar from JSON Component -->
+<nav class="bg-fresh-paper w-full max-w-[1280px] mx-auto border-b border-muted-taupe/20 px-margin-page py-stack-md flex justify-between items-center mb-stack-lg rounded-sm shadow-sm">
+<div class="font-headline-md text-headline-md text-warm-onyx">Gradelens</div>
+<div class="flex items-center gap-gutter">
+<span class="font-label-lg text-label-lg text-warm-onyx border-b-2 border-vermilion pb-1 cursor-pointer">Dashboard</span>
+<button class="flex items-center gap-unit text-muted-taupe hover:text-warm-onyx transition-colors">
+<span class="font-label-lg text-label-lg">Logout</span>
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</nav>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter w-full">
+<!-- Card A: Professor's Answer Key -->
+<div class="bg-fresh-paper border border-muted-taupe/20 rounded-sm p-padding-card shadow-sm flex flex-col gap-stack-md">
+<h3 class="font-headline-md text-headline-md text-warm-onyx mb-stack-sm border-b border-muted-taupe/10 pb-unit">Professor's Answer Key</h3>
+<div class="flex flex-col gap-stack-sm">
+<label class="font-label-md text-label-md text-muted-taupe uppercase" for="answer-key">Ideal Response</label>
+<textarea class="bg-vellum border border-muted-taupe/20 rounded-sm p-4 font-body-md text-body-md min-h-[150px] focus:border-vermilion focus:ring-0 focus:outline-none resize-y" id="answer-key" placeholder="Enter the definitive academic response here..."></textarea>
+</div>
+<div class="grid grid-cols-1 gap-stack-md">
+<div class="flex flex-col gap-stack-sm">
+<label class="font-label-md text-label-md text-muted-taupe uppercase" for="crit-keywords">Critical Keywords (Comma Separated)</label>
+<input class="bg-vellum border border-muted-taupe/20 rounded-sm px-4 py-3 font-label-md text-label-md font-mono focus:border-vermilion focus:ring-0 focus:outline-none" id="crit-keywords" placeholder="e.g., deterministic, ontology, epistemology" type="text"/>
+</div>
+<div class="flex flex-col gap-stack-sm">
+<label class="font-label-md text-label-md text-muted-taupe uppercase" for="reg-keywords">Regular Keywords</label>
+<input class="bg-vellum border border-muted-taupe/20 rounded-sm px-4 py-3 font-label-md text-label-md font-mono focus:border-vermilion focus:ring-0 focus:outline-none" id="reg-keywords" placeholder="e.g., framework, context, historical" type="text"/>
+</div>
+</div>
+</div>
+<!-- Card B: Student Submission -->
+<div class="bg-fresh-paper border border-muted-taupe/20 rounded-sm p-padding-card shadow-sm flex flex-col gap-stack-md h-full">
+<h3 class="font-headline-md text-headline-md text-warm-onyx mb-stack-sm border-b border-muted-taupe/10 pb-unit">Student Submission</h3>
+<div class="flex flex-col gap-stack-sm flex-grow">
+<label class="font-label-md text-label-md text-muted-taupe uppercase" for="student-sub">Submission Text</label>
+<textarea class="bg-vellum border border-muted-taupe/20 rounded-sm p-4 font-body-md text-body-md h-full min-h-[300px] focus:border-vermilion focus:ring-0 focus:outline-none resize-none" id="student-sub" placeholder="Paste student text here..."></textarea>
+</div>
+</div>
+</div>
+<div class="mt-stack-lg w-full">
+<button class="w-full bg-vermilion text-white font-headline-md text-headline-md py-6 rounded-sm shadow-sm hover:bg-vermilion/90 transition-colors active:scale-[0.99] flex justify-center items-center gap-2" type="button">
+                    Grade Submission
+                    <span class="material-symbols-outlined">analytics</span>
+</button>
+</div>
+<p class="mt-stack-md font-label-md text-label-md text-muted-taupe uppercase tracking-widest text-center">State 2: Dashboard (Rubric &amp; Upload)</p>
+</section>
+<!-- Separator -->
+<div class="w-full h-px bg-muted-taupe/20"></div>
+<!-- STATE 3: Loading -->
+<section class="flex flex-col items-center justify-center w-full min-h-[409px] bg-fresh-paper border border-muted-taupe/20 rounded-sm shadow-sm">
+<div class="flex flex-col items-center gap-stack-md animate-pulse">
+<span class="material-symbols-outlined text-[64px] text-vermilion">settings_b_roll</span>
+<p class="font-headline-md text-headline-md text-warm-onyx text-center max-w-2xl">
+                    Applying deterministic grading rules and checking keywords...
+                </p>
+<div class="w-64 h-1 bg-muted-taupe/20 mt-stack-sm overflow-hidden rounded-full">
+<div class="w-1/3 h-full bg-vermilion rounded-full"></div>
+</div>
+</div>
+<p class="mt-margin-page font-label-md text-label-md text-muted-taupe uppercase tracking-widest text-center">State 3: Loading Engine</p>
+</section>
+<!-- Separator -->
+<div class="w-full h-px bg-muted-taupe/20"></div>
+<!-- STATE 4: Results -->
+<section class="flex flex-col items-center w-full max-w-4xl mx-auto">
+<div class="bg-fresh-paper border border-muted-taupe/20 rounded-sm p-margin-page shadow-sm w-full flex flex-col items-center gap-stack-lg">
+<!-- Score Display -->
+<div class="text-center flex flex-col items-center gap-stack-sm">
+<span class="font-label-lg text-label-lg text-muted-taupe uppercase tracking-widest">Final Assessment</span>
+<h2 class="font-display-lg text-display-lg text-vermilion">50% - Half Marks</h2>
+</div>
+<!-- Manual Review Flag -->
+<div class="w-full bg-[#fcf4f3] border border-vermilion/30 rounded-sm p-4 flex items-start gap-4">
+<span class="material-symbols-outlined text-vermilion mt-1">warning</span>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-warm-onyx uppercase">Manual Review Recommended</span>
+<span class="font-body-md text-body-md text-warm-onyx mt-unit">Student scored 50% but wrote over 80 words.</span>
+</div>
+</div>
+<!-- System Log Card -->
+<div class="w-full border border-muted-taupe/20 rounded-sm p-padding-card bg-vellum flex flex-col gap-stack-md">
+<div class="flex items-center gap-2 border-b border-muted-taupe/10 pb-unit">
+<span class="material-symbols-outlined text-muted-taupe text-sm">terminal</span>
+<h4 class="font-label-lg text-label-lg text-warm-onyx uppercase tracking-wide">Deterministic Engine Log</h4>
+</div>
+<p class="font-mono text-sm text-warm-onyx leading-relaxed">
+                        &gt; Tier 2 Triggered: Exact match failed.<br/>
+                        &gt; All Critical Keywords found.<br/>
+<span class="text-library-green">&gt; Note: 'mitochondria' accepted via typo-tolerance.</span><br/>
+                        &gt; Syntactic density below threshold (0.42).
+                    </p>
+</div>
+<!-- Action -->
+<button class="mt-stack-md px-8 py-4 border border-muted-taupe/40 text-warm-onyx font-label-lg text-label-lg rounded-sm hover:bg-muted-taupe/5 transition-colors active:scale-[0.99] flex items-center gap-2" type="button">
+                    Grade Next Student
+                    <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<p class="mt-stack-md font-label-md text-label-md text-muted-taupe uppercase tracking-widest text-center">State 4: Results &amp; Diagnostics</p>
+</section>
+</main>
+<!-- Footer from JSON Component -->
+<footer class="bg-fresh-paper border-t border-muted-taupe/20 w-full px-margin-page py-stack-lg mt-margin-page flex flex-col md:flex-row justify-between items-center">
+<div class="font-label-lg text-label-lg text-warm-onyx opacity-90 mb-stack-md md:mb-0">
+            Gradelens
+        </div>
+<p class="font-label-sm text-label-sm text-muted-taupe mb-stack-md md:mb-0 text-center">
+            © 2024 Gradelens Academic Systems. Deterministic Knowledge Management.
+        </p>
+<div class="flex gap-gutter font-label-sm text-label-sm text-muted-taupe">
+<a class="hover:text-warm-onyx transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-warm-onyx transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-warm-onyx transition-colors" href="#">Faculty Support</a>
+</div>
+</footer>
+</body></html>
