@@ -30,6 +30,7 @@ export default function App() {
   const [regInput, setRegInput] = useState('');
   const [studentText, setStudentText] = useState('');
   const [file, setFile] = useState(null);
+  const [questionType, setQuestionType] = useState('essay');
 
   // Result state
   const [result, setResult] = useState(null);
@@ -195,13 +196,16 @@ export default function App() {
       alert("Please provide an Ideal Response (Answer Key).");
       return;
     }
-    if (critKeysArr.length === 0) {
-      alert("Please provide at least one Critical Keyword.");
-      return;
-    }
-    if (regKeysArr.length === 0) {
-      alert("Please provide at least one Regular Keyword.");
-      return;
+    // Only require keywords for essay mode
+    if (questionType === 'essay') {
+      if (critKeysArr.length === 0) {
+        alert("Please provide at least one Critical Keyword.");
+        return;
+      }
+      if (regKeysArr.length === 0) {
+        alert("Please provide at least one Regular Keyword.");
+        return;
+      }
     }
     if (!studentText.trim() && !file) {
       alert("Please provide a Student Submission (Text or File).");
@@ -215,6 +219,7 @@ export default function App() {
       formData.append('criticalKeywords', critKeysArr.join(','));
       formData.append('regularKeywords', regKeysArr.join(','));
       formData.append('studentText', studentText);
+      formData.append('questionType', questionType);
       if (file) {
         formData.append('submissionFile', file);
       }
@@ -380,18 +385,50 @@ export default function App() {
                 </button>
               </div>
             </nav>
+            {/* Question Type Toggle */}
+            <div className="w-full mb-6 bg-fresh-paper border border-muted-taupe/20 rounded-xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-6">
+              <span className="font-label-lg text-label-lg text-muted-taupe uppercase tracking-widest">Question Type</span>
+              <div className="flex gap-1 bg-vellum rounded-lg p-1 border border-muted-taupe/15">
+                <button
+                  type="button"
+                  onClick={() => setQuestionType('essay')}
+                  className={`px-5 py-2.5 rounded-md text-sm font-label-md uppercase tracking-wider transition-all ${
+                    questionType === 'essay'
+                      ? 'bg-vermilion text-white shadow-md'
+                      : 'text-muted-taupe hover:text-warm-onyx'
+                  }`}
+                >
+                  Essay
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuestionType('mcq')}
+                  className={`px-5 py-2.5 rounded-md text-sm font-label-md uppercase tracking-wider transition-all ${
+                    questionType === 'mcq'
+                      ? 'bg-vermilion text-white shadow-md'
+                      : 'text-muted-taupe hover:text-warm-onyx'
+                  }`}
+                >
+                  Multiple Choice
+                </button>
+              </div>
+              <span className="text-xs text-muted-taupe font-body-md ml-auto">
+                {questionType === 'mcq' ? 'Comma-separated answers (e.g. A, B, C, D)' : 'Keyword-based essay grading'}
+              </span>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter w-full">
               {/* Card A: Professor's Answer Key */}
               <div className="bg-fresh-paper border border-muted-taupe/20 rounded-xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col gap-stack-md">
                 <h3 className="font-headline-md text-headline-md text-warm-onyx mb-stack-sm border-b border-muted-taupe/10 pb-unit">Professor's Answer Key</h3>
                 <div className="flex flex-col gap-stack-sm">
                   <div className="flex items-center justify-between">
-                    <label className="font-label-md text-label-md text-muted-taupe uppercase" htmlFor="answer-key">Ideal Response</label>
+                    <label className="font-label-md text-label-md text-muted-taupe uppercase" htmlFor="answer-key">{questionType === 'mcq' ? 'Professor Answer Key (A, B, C...)' : 'Ideal Response'}</label>
                     <button type="button" onClick={() => answerKeyFileRef.current?.click()} className="text-muted-taupe hover:text-vermilion transition-colors flex items-center gap-1 text-xs font-label-md"><span className="material-symbols-outlined text-[16px]">upload_file</span>Upload</button>
                     <input type="file" ref={answerKeyFileRef} accept=".txt,.pdf,.docx" className="hidden" onChange={e => { handleReferenceUpload(e.target.files[0], 'answerKey'); e.target.value = ''; }} />
                   </div>
-                  <textarea className="w-full box-border bg-vellum border border-muted-taupe/20 rounded-xl p-4 font-body-md text-body-md min-h-[250px] focus:border-vermilion focus:ring-2 focus:ring-vermilion/30 focus:outline-none resize-y transition-all" id="answer-key" placeholder="Enter the definitive academic response here..." value={answerKey} onChange={e => setAnswerKey(e.target.value)}></textarea>
+                  <textarea className="w-full box-border bg-vellum border border-muted-taupe/20 rounded-xl p-4 font-body-md text-body-md min-h-[250px] focus:border-vermilion focus:ring-2 focus:ring-vermilion/30 focus:outline-none resize-y transition-all" id="answer-key" placeholder={questionType === 'mcq' ? 'A, B, C, D, A, B...' : 'Enter the definitive academic response here...'} value={answerKey} onChange={e => setAnswerKey(e.target.value)}></textarea>
                 </div>
+                {questionType === 'essay' && (
                 <div className="grid grid-cols-1 gap-stack-md">
                   <div className="flex flex-col gap-stack-sm">
                     <div className="flex items-center justify-between">
@@ -456,13 +493,14 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+                )}
               </div>
               {/* Card B: Student Submission */}
               <div className="bg-fresh-paper border border-muted-taupe/20 rounded-xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col gap-stack-md h-full">
                 <h3 className="font-headline-md text-headline-md text-warm-onyx mb-stack-sm border-b border-muted-taupe/10 pb-unit">Student Submission</h3>
                 <div className="flex flex-col gap-stack-sm flex-grow">
-                  <label className="font-label-md text-label-md text-muted-taupe uppercase" htmlFor="student-sub">Submission Text</label>
-                  <textarea className="w-full box-border bg-vellum border border-muted-taupe/20 rounded-xl p-4 font-body-md text-body-md h-full min-h-[400px] focus:border-vermilion focus:ring-2 focus:ring-vermilion/30 focus:outline-none resize-none transition-all" id="student-sub" placeholder="Paste student text here..." value={studentText} onChange={e => setStudentText(e.target.value)}></textarea>
+                  <label className="font-label-md text-label-md text-muted-taupe uppercase" htmlFor="student-sub">{questionType === 'mcq' ? 'Student Answers (A, B, C...)' : 'Submission Text'}</label>
+                  <textarea className="w-full box-border bg-vellum border border-muted-taupe/20 rounded-xl p-4 font-body-md text-body-md h-full min-h-[400px] focus:border-vermilion focus:ring-2 focus:ring-vermilion/30 focus:outline-none resize-none transition-all" id="student-sub" placeholder={questionType === 'mcq' ? 'A, B, C, D, A, B...' : 'Paste student text here...'} value={studentText} onChange={e => setStudentText(e.target.value)}></textarea>
                 <label className="font-label-md text-label-md text-muted-taupe uppercase mt-stack-md" htmlFor="submission-file">Or Upload File (.txt, .pdf, .docx)</label>
                 <input 
                   type="file" 
@@ -506,9 +544,25 @@ export default function App() {
         {/* STATE 4: Results */}
         {view === 'results' && result && (() => {
           const getFeedback = (score, manualReview) => {
+            // MCQ-specific feedback
+            if (questionType === 'mcq') {
+              if (score === 100) {
+                return {
+                  title: 'Flawless Execution',
+                  desc: 'All answers match the key. Every response has been verified against the answer key with zero discrepancies. This is a perfect submission demonstrating complete mastery of the assessed material.'
+                };
+              } else {
+                return {
+                  title: 'Assessment Complete',
+                  desc: 'Please review the automated diagnostic below for exact discrepancies. The engine has compared each answer against the official key and identified specific mismatches. Use the diagnostic output to pinpoint which questions need review.'
+                };
+              }
+            }
+
+            // Essay feedback
             let feedbackKey = '';
             if (manualReview === true) {
-                feedbackKey = 'review'; // Force the review text if the flag is true, regardless of score
+                feedbackKey = 'review';
             } else if (score === 100) {
                 feedbackKey = 'perfect';
             } else if (score >= 75) {
@@ -516,7 +570,7 @@ export default function App() {
             } else if (score >= 40) {
                 feedbackKey = 'solid';
             } else {
-                feedbackKey = 'low'; // < 40% but NOT flagged for manual review
+                feedbackKey = 'low';
             }
 
             const texts = {
@@ -561,6 +615,21 @@ export default function App() {
                 <h3 className="font-headline-md text-headline-md text-vermilion">{feedback.title}</h3>
                 <p className="font-body-md text-body-md text-warm-onyx leading-relaxed">{feedback.desc}</p>
               </div>
+
+              {/* Diagnostic Output Box */}
+              {result.specificMistake && (
+                <div className={`w-full rounded-xl p-5 border font-mono text-sm leading-relaxed ${
+                  result.score === 100
+                    ? 'bg-[#f0fdf4] border-[#bbf7d0] text-[#166534]'
+                    : 'bg-[#fef2f2] border-[#fecaca] text-[#991b1b]'
+                }`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="material-symbols-outlined text-[16px] opacity-60">terminal</span>
+                    <span className="uppercase text-[10px] tracking-widest font-label-md opacity-70">Engine Diagnostic Output</span>
+                  </div>
+                  <p className="whitespace-pre-wrap break-words">{result.specificMistake}</p>
+                </div>
+              )}
 
               {/* Manual Review Flag */}
               {result.manualReview && (

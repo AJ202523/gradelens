@@ -206,7 +206,7 @@ app.post('/reset-password', async (req, res) => {
 });
 
 app.post('/grade', upload.single('submissionFile'), async (req, res) => {
-    let { answerKey, criticalKeywords, regularKeywords, studentText, userEmail } = req.body;
+    let { answerKey, criticalKeywords, regularKeywords, studentText, userEmail, questionType } = req.body;
     
     if (!answerKey || (!studentText && !req.file)) {
         return res.status(400).json({ error: 'Missing required fields: Answer Key and Student Submission are mandatory.' });
@@ -221,52 +221,149 @@ app.post('/grade', upload.single('submissionFile'), async (req, res) => {
         }
     }
 
-    const critKeys = typeof criticalKeywords === 'string' ? criticalKeywords.split(',').map(s => s.trim()).filter(s => s) : (criticalKeywords || []);
-    const regKeys = typeof regularKeywords === 'string' ? regularKeywords.split(',').map(s => s.trim()).filter(s => s) : (regularKeywords || []);
-    
-    // ENGINE UPGRADE: Strict Keyword Rules & Penalty Math
-    const normStudentText = normalize(studentText);
-    const studentWords = tokenize(studentText);
-    
-    const checkKeyword = (kw) => {
-        const normKw = normalize(kw);
-        if (!normKw) return false;
-        
-        if (normKw.length <= 4) {
-            // Strict exact match for short words
-            return normStudentText.includes(normKw);
+    let score = 100;
+    let isManualReview = false;
+    let log = '';
+    let missedKeywordsArray = [];
+    let missedKeywordsString = '';
+    let specificMistake = '';
+    let correctCount = 0;
+    let totalQuestions = 0;
+    let mistakesString = '';
+
+    if (questionType === 'mcq') {
+        // Robust delimiter parsing: comma, newline, semicolon, or pipe
+        const studentAnswers = (studentText || '').split(/[\n,;|]+/).map(a => a.trim().toUpperCase()).filter(a => a !== '');
+        const correctAnswers = (answerKey || '').split(/[\n,;|]+/).map(a => a.trim().toUpperCase()).filter(a => a !== '');
+
+        correctCount = 0;
+        const mistakesList = [];
+
+        // Loop strictly bounded to the answer key length
+        for (let i = 0; i < correctAnswers.length; i++) {
+            const studentAnswer = (studentAnswers[i] !== undefined && studentAnswers[i] !== '') ? studentAnswers[i] : 'No Answer Provided';
+
+            if (studentAnswer === correctAnswers[i]) {
+                correctCount++;
+            } else {
+                mistakesList.push(`Q${i + 1}: Answered '${studentAnswer}', Correct was '${correctAnswers[i]}'`);
+            }
+        }
+
+        score = correctAnswers.length > 0 ? Math.round((correctCount / correctAnswers.length) * 100) : 0;
+        isManualReview = false;
+
+        if (score === 100) {
+            specificMistake = `Perfect score! ${correctCount}/${correctAnswers.length} correct.`;
         } else {
-            // Fuzzy matching for > 4 characters
-            if (normStudentText.includes(normKw)) return true;
-            
+            specificMistake = `Score: ${correctCount}/${correctAnswers.length}. Mistakes: ${mistakesList.join(' | ')}`;
+        }
+
+        // Over-answer warning: student submitted more answers than the key expects
+        if (studentAnswers.length > correctAnswers.length) {
+            specificMistake += ` | System Alert: You submitted ${studentAnswers.length} answers, but there are only ${correctAnswers.length} questions. Extra answers were ignored.`;
+        }
+
+        totalQuestions = correctAnswers.length;
+        mistakesString = mistakesList.join(' | ');
+        log = `Batch MCQ Graded. Score: ${score}.`;
+    } else {
+        const critKeys = typeof criticalKeywords === 'string' ? criticalKeywords.split(',').map(s => s.trim()).filter(s => s) : (criticalKeywords || []);
+        const regKeys = typeof regularKeywords === 'string' ? regularKeywords.split(',').map(s => s.trim()).filter(s => s) : (regularKeywords || []);
+        
+        // ENGINE UPGRADE: Strict Keyword Rules & Penalty Math
+        const normStudentText = normalize(studentText);
+        const studentWords = tokenize(studentText);
+
+        // ANTI-CHEAT: Negation Trap
+        const negations = ['not', 'never', 'isnt', "isn't", 'doesnt', "doesn't", 'false'];
+
+        const findKeywordIndex = (kw) => {
+            const normKw = normalize(kw);
+            if (!normKw) return -1;
+            // Return the index of the first word of the keyword match in studentWords
             const keyWords = tokenize(kw);
-            const threshold = normKw.length > 5 ? 2 : 1;
+            if (keyWords.length === 0) return -1;
+            for (let i = 0; i <= studentWords.length - keyWords.length; i++) {
+                const ngram = studentWords.slice(i, i + keyWords.length).join(' ');
+                if (ngram === normKw) return i;
+            }
+            return -1;
+        };
+
+        const isNegated = (kw) => {
+            const idx = findKeywordIndex(kw);
+            if (idx <= 0) return false;
+            // Check the 3 words immediately preceding the keyword
+            const start = Math.max(0, idx - 3);
+            const precedingWords = studentWords.slice(start, idx);
+            return precedingWords.some(w => negations.includes(w));
+        };
+        
+        const checkKeyword = (kw) => {
+            const normKw = normalize(kw);
+            if (!normKw) return false;
             
-            if (keyWords.length > 0 && keyWords.length <= studentWords.length) {
-                for (let i = 0; i <= studentWords.length - keyWords.length; i++) {
-                    const ngram = studentWords.slice(i, i + keyWords.length).join(' ');
-                    if (levenshtein.get(ngram, normKw) <= threshold) {
-                        return true;
+            if (normKw.length <= 4) {
+                // Strict exact match for short words
+                return normStudentText.includes(normKw);
+            } else {
+                // Fuzzy matching for > 4 characters
+                if (normStudentText.includes(normKw)) return true;
+                
+                const keyWords = tokenize(kw);
+                const threshold = normKw.length > 5 ? 2 : 1;
+                
+                if (keyWords.length > 0 && keyWords.length <= studentWords.length) {
+                    for (let i = 0; i <= studentWords.length - keyWords.length; i++) {
+                        const ngram = studentWords.slice(i, i + keyWords.length).join(' ');
+                        if (levenshtein.get(ngram, normKw) <= threshold) {
+                            return true;
+                        }
                     }
                 }
+                return false;
             }
-            return false;
+        };
+
+        // Critical keywords: must pass BOTH the match check AND the negation trap
+        const missedCritical = critKeys.filter(kw => !checkKeyword(kw) || isNegated(kw));
+        const missedRegular = regKeys.filter(kw => !checkKeyword(kw));
+
+        score -= (missedCritical.length * 25);
+        score -= (missedRegular.length * 10);
+        if (score < 0) score = 0;
+
+        missedKeywordsArray = [...missedCritical, ...missedRegular];
+        missedKeywordsString = missedKeywordsArray.join(', ');
+        
+        isManualReview = score < 40 || missedCritical.length > 0;
+        log = `Penalty Math Applied. Score: ${score}. Missed Critical: ${missedCritical.length}, Missed Regular: ${missedRegular.length}.`;
+        
+        specificMistake = missedKeywordsString ? `Diagnostic: You missed the following required keywords: ${missedKeywordsString}` : "Diagnostic: All required keywords successfully integrated.";
+
+        // ANTI-CHEAT: Spam Filter (keyword frequency check)
+        let spamDetected = false;
+        if (studentWords.length < 50) {
+            const allKeys = [...critKeys, ...regKeys];
+            for (const kw of allKeys) {
+                const normKw = normalize(kw);
+                if (!normKw) continue;
+                const regex = new RegExp(normKw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                const matches = normStudentText.match(regex);
+                if (matches && matches.length > 3) {
+                    spamDetected = true;
+                    break;
+                }
+            }
         }
-    };
 
-    const missedCritical = critKeys.filter(kw => !checkKeyword(kw));
-    const missedRegular = regKeys.filter(kw => !checkKeyword(kw));
-
-    let score = 100;
-    score -= (missedCritical.length * 25);
-    score -= (missedRegular.length * 10);
-    if (score < 0) score = 0;
-
-    const missedKeywordsArray = [...missedCritical, ...missedRegular];
-    const missedKeywordsString = missedKeywordsArray.join(', ');
-    
-    const isManualReview = score < 40 || missedCritical.length > 0;
-    const log = `Penalty Math Applied. Score: ${score}. Missed Critical: ${missedCritical.length}, Missed Regular: ${missedRegular.length}.`;
+        if (spamDetected) {
+            isManualReview = true;
+            specificMistake += " | System Alert: Anomalous keyword repetition detected. Potential spam attempt.";
+            log += " SPAM FLAG TRIGGERED.";
+        }
+    }
 
     try {
         const filename = req.file ? req.file.originalname : 'Manual Entry';
@@ -277,19 +374,36 @@ app.post('/grade', upload.single('submissionFile'), async (req, res) => {
         const istDate = new Date(now.getTime() + istOffset);
         const istTimestamp = istDate.toISOString().replace('T', ' ').substring(0, 19);
 
-        // Wait for DB save before sending response
-        db.run(
-            'INSERT INTO history (filename, extracted_text, score, log, missed_keywords, user_email, manualReviewFlag, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [filename, studentText, score, log, missedKeywordsString, userEmail, isManualReview ? 1 : 0, istTimestamp],
-            function(err) {
-                if (err) {
-                    console.error('SQL ERROR during history insertion:', err.message);
-                    return res.json({ score, log, manualReview: isManualReview, missedKeywords: missedKeywordsArray, historySaved: false });
+        // Conditional Database Routing
+        if (questionType === 'mcq') {
+            // Save to the normalized mcq_history table
+            db.run(
+                'INSERT INTO mcq_history (score, correctCount, totalQuestions, mistakes, user_email, timestamp) VALUES (?, ?, ?, ?, ?, ?)',
+                [score, correctCount, totalQuestions, mistakesString, userEmail, istTimestamp],
+                function(err) {
+                    if (err) {
+                        console.error('SQL ERROR during mcq_history insertion:', err.message);
+                        return res.json({ score, log, manualReview: false, specificMistake, historySaved: false });
+                    }
+                    console.log(`SUCCESS: MCQ result saved to mcq_history for ${userEmail}`);
+                    res.json({ score, log, manualReview: false, specificMistake, historySaved: true, historyId: this.lastID });
                 }
-                console.log(`SUCCESS: Result saved to database for ${userEmail}`);
-                res.json({ score, log, manualReview: isManualReview, missedKeywords: missedKeywordsArray, historySaved: true, historyId: this.lastID });
-            }
-        );
+            );
+        } else {
+            // Save to the original history table for essays
+            db.run(
+                'INSERT INTO history (filename, extracted_text, score, log, missed_keywords, user_email, manualReviewFlag, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [filename, studentText, score, log, missedKeywordsString, userEmail, isManualReview ? 1 : 0, istTimestamp],
+                function(err) {
+                    if (err) {
+                        console.error('SQL ERROR during history insertion:', err.message);
+                        return res.json({ score, log, manualReview: isManualReview, missedKeywords: missedKeywordsArray, specificMistake, historySaved: false });
+                    }
+                    console.log(`SUCCESS: Essay result saved to history for ${userEmail}`);
+                    res.json({ score, log, manualReview: isManualReview, missedKeywords: missedKeywordsArray, specificMistake, historySaved: true, historyId: this.lastID });
+                }
+            );
+        }
     } catch (err) {
         console.error('Grading engine error:', err);
         res.status(500).json({ error: 'Grading engine error' });
@@ -393,6 +507,46 @@ app.get('/analytics-data', (req, res) => {
         data.stats.mostMissedKeyword = mostMissed;
 
         res.json(data);
+    });
+});
+
+app.get('/api/analytics', (req, res) => {
+    const distributionQuery = `
+        SELECT 
+            SUM(CASE WHEN score BETWEEN 0 AND 39 THEN 1 ELSE 0 END) as '0-39',
+            SUM(CASE WHEN score BETWEEN 40 AND 74 THEN 1 ELSE 0 END) as '40-74',
+            SUM(CASE WHEN score BETWEEN 75 AND 89 THEN 1 ELSE 0 END) as '75-89',
+            SUM(CASE WHEN score BETWEEN 90 AND 100 THEN 1 ELSE 0 END) as '90-100'
+        FROM history
+    `;
+
+    const reviewRatioQuery = `
+        SELECT 
+            SUM(CASE WHEN manualReviewFlag = 1 OR manualReviewFlag = 'true' THEN 1 ELSE 0 END) as flagged,
+            SUM(CASE WHEN manualReviewFlag = 0 OR manualReviewFlag = 'false' OR manualReviewFlag IS NULL THEN 1 ELSE 0 END) as clean
+        FROM history
+    `;
+
+    db.get(distributionQuery, [], (err, distResult) => {
+        if (err) return res.status(500).json({ error: 'Database error on distribution query' });
+        
+        db.get(reviewRatioQuery, [], (err, reviewResult) => {
+            if (err) return res.status(500).json({ error: 'Database error on review ratio query' });
+
+            const distribution = [
+                { name: '0-39', value: distResult['0-39'] || 0 },
+                { name: '40-74', value: distResult['40-74'] || 0 },
+                { name: '75-89', value: distResult['75-89'] || 0 },
+                { name: '90-100', value: distResult['90-100'] || 0 }
+            ];
+
+            const reviewRatio = [
+                { name: 'Flagged', value: reviewResult['flagged'] || 0 },
+                { name: 'Clean', value: reviewResult['clean'] || 0 }
+            ];
+
+            res.json({ distribution, reviewRatio });
+        });
     });
 });
 

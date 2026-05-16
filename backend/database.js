@@ -63,6 +63,25 @@ function initializeTables() {
             db.run(`ALTER TABLE history ADD COLUMN manualReviewFlag BOOLEAN`, () => {});
         }
     });
+
+    // Initialize the MCQ history table (normalized, separate from essays)
+    db.run(`
+        CREATE TABLE IF NOT EXISTS mcq_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            score INTEGER,
+            correctCount INTEGER,
+            totalQuestions INTEGER,
+            mistakes TEXT,
+            user_email TEXT,
+            timestamp DATETIME DEFAULT (DATETIME('now', '+5 hours', '30 minutes'))
+        )
+    `, (err) => {
+        if (err) {
+            console.error('Error creating mcq_history table:', err.message);
+        } else {
+            console.log('mcq_history table is ready.');
+        }
+    });
 }
 
 // Wrap write methods to emit 'change' event
